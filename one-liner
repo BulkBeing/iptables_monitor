@@ -1,4 +1,14 @@
 
 # One-liner to parse tcpdump output and print continuously to screen.
 
-tcpdump -nnAi any 'inbound and (dst port 80 or dst port 443)' | perl -lane 'BEGIN {$TOP=10;$SLEEP=5;$hits=0;$SIG{"ALRM"}=\&show;alarm($SLEEP)}; if ($F[1] eq "IP" && $F[3] eq ">") {$F[2] =~ s/\.\d+$//; $ip = $F[2];} elsif(/(GET|POST) .*? HTTP/){ /(GET|POST)\s(.*?)\sHTTP/; $url = $2 if defined; $method = $1 if defined; } elsif(/^Host:/ && $method) { $F[1] =~ s/^www\.//; $hosts{$F[1]}++; $gets{$method." ".$F[1].$url}++ if($method =~ /GET/); $posts{$method." ".$F[1].$url}++ if($method =~ /POST/); $ips{$ip}++; $hits++; $reqs++;} sub show{printf("%02d:%02d:%02d    hits: %7d  domains: %5d  ips:  %7d  requests: %7d\n", reverse (((localtime(time)))[1..3]), $hits,scalar keys %hosts,scalar keys %ips, $reqs); foreach $wrd (qw(hosts ips gets posts)){ $w=0; print "Top $wrd:\n"; foreach(grep { $w++<$TOP } sort { $$wrd{$b} <=> $$wrd{$a} } keys %{$wrd}) { printf("  %10d  %s\n",$$wrd{$_},$_) } } print "\n"; $hits=0; undef %ips; undef %hosts; undef %gets; undef %posts; alarm($SLEEP);}'
+tcpdump -nnAi any 'inbound and (dst port 80 or dst port 443)' |\ 
+perl -lane 'BEGIN {$TOP=10;$SLEEP=5;$hits=0;$SIG{"ALRM"}=\&show;alarm($SLEEP)};\
+if ($F[1] eq "IP" && $F[3] eq ">") {$F[2] =~ s/\.\d+$//; $ip = $F[2];}\
+elsif(/(GET|POST) .*? HTTP/){ /(GET|POST)\s(.*?)\sHTTP/; $url = $2 if defined; $method = $1 if defined; }\
+elsif(/^Host:/ && $method) { $F[1] =~ s/^www\.//; $hosts{$F[1]}++; $gets{$method." ".$F[1].$url}++\
+if($method =~ /GET/); $posts{$method." ".$F[1].$url}++ if($method =~ /POST/);\
+$ips{$ip}++; $hits++; $reqs++;} sub show{printf("%02d:%02d:%02d    hits: %7d  domains: %5d  ips:  %7d  requests: %7d\n",\
+reverse (((localtime(time)))[1..3]), $hits,scalar keys %hosts,scalar keys %ips, $reqs);\ 
+foreach $wrd (qw(hosts ips gets posts)){ $w=0; print "Top $wrd:\n";\
+foreach(grep { $w++<$TOP } sort { $$wrd{$b} <=> $$wrd{$a} } keys %{$wrd}) { printf("  %10d  %s\n",$$wrd{$_},$_) } } print "\n";\
+$hits=0; undef %ips; undef %hosts; undef %gets; undef %posts; alarm($SLEEP);}'
